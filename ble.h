@@ -27,7 +27,6 @@
 #include <BLEServer.h>
 
 #define SERVICE_UUID        "9a9c83cc-845e-4883-96c3-1f021b99c34c"
-#define CHARACTERISTIC_UUID "a8c27e11-bf97-40a5-8438-3631bb75a7e1"
 
 class FieldCallbacks: public BLECharacteristicCallbacks {
     void onWrite(BLECharacteristic *pCharacteristic) {

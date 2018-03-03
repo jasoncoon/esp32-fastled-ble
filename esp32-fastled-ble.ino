@@ -23,17 +23,11 @@
 */
 
 #include <FastLED.h>
-//#include <WiFi.h>
-//#include <ESP8266WebServer.h>
-//#include <FS.h>
-//#include <SPIFFS.h>
 #include <EEPROM.h>
 
 #if defined(FASTLED_VERSION) && (FASTLED_VERSION < 3001008)
 #warning "Requires FastLED 3.1.8 or later; check github for latest code."
 #endif
-
-//WebServer webServer(80);
 
 const int led = 5;
 
@@ -89,17 +83,7 @@ CRGB leds[NUM_LEDS];
 #include "field.h"
 #include "fields.h"
 
-//#include "secrets.h"
-//#include "wifi.h"
-//#include "web.h"
-
 #include "ble.h"
-
-// wifi ssid and password should be added to a file in the sketch named secrets.h
-// the secrets.h file should be added to the .gitignore file and never committed or
-// pushed to public source control (GitHub).
-// const char* ssid = "........";
-// const char* password = "........";
 
 // -- Task handles for use in the notifications
 static TaskHandle_t FastLEDshowTaskHandle = 0;
@@ -144,37 +128,6 @@ void FastLEDshowTask(void *pvParameters)
   }
 }
 
-//void listDir(fs::FS &fs, const char * dirname, uint8_t levels) {
-//  Serial.printf("Listing directory: %s\n", dirname);
-//
-//  File root = fs.open(dirname);
-//  if (!root) {
-//    Serial.println("Failed to open directory");
-//    return;
-//  }
-//  if (!root.isDirectory()) {
-//    Serial.println("Not a directory");
-//    return;
-//  }
-//
-//  File file = root.openNextFile();
-//  while (file) {
-//    if (file.isDirectory()) {
-//      Serial.print("  DIR : ");
-//      Serial.println(file.name());
-//      if (levels) {
-//        listDir(fs, file.name(), levels - 1);
-//      }
-//    } else {
-//      Serial.print("  FILE: ");
-//      Serial.print(file.name());
-//      Serial.print("  SIZE: ");
-//      Serial.println(file.size());
-//    }
-//    file = root.openNextFile();
-//  }
-//}
-
 void setup() {
   pinMode(led, OUTPUT);
   digitalWrite(led, 1);
@@ -182,14 +135,9 @@ void setup() {
   //  delay(3000); // 3 second delay for recovery
   Serial.begin(115200);
 
-//  SPIFFS.begin();
-//  listDir(SPIFFS, "/", 1);
-
-//  loadFieldsFromEEPROM(fields, fieldCount);
+  loadFieldsFromEEPROM(fields, fieldCount);
 
   setupBLE();
-//  setupWifi();
-//  setupWeb();
 
   // three-wire LEDs (WS2811, WS2812, NeoPixel)
   //  FastLED.addLeds<LED_TYPE, DATA_PIN, COLOR_ORDER>(leds, NUM_LEDS).setCorrection(TypicalLEDStrip);
@@ -224,8 +172,6 @@ void setup() {
 
 void loop()
 {
-//  handleWeb();
-
   if (power == 0) {
     fill_solid(leds, NUM_LEDS, CRGB::Black);
   }
