@@ -1,0 +1,461 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <!-- Required meta tags -->
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, shrink-to-fit=no"
+    />
+
+    <title>ESP32 FastLED BLE</title>
+
+    <link
+      href="https://fonts.googleapis.com/css?family=Roboto&display=swap"
+      rel="stylesheet"
+    />
+
+    <!-- Bootstrap CSS -->
+    <link
+      rel="stylesheet"
+      href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css"
+      integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm"
+      crossorigin="anonymous"
+    />
+    <style>
+      body {
+        padding-top: 5rem;
+      }
+    </style>
+  </head>
+
+  <body>
+    <nav class="navbar navbar-expand-sm navbar-light bg-light fixed-top">
+      <a class="navbar-brand" href="#">ESP32 FastLED BLE</a>
+      <button
+        class="navbar-toggler"
+        type="button"
+        data-toggle="collapse"
+        data-target="#navbarSupportedContent"
+        aria-controls="navbarSupportedContent"
+        aria-expanded="false"
+        aria-label="Toggle navigation"
+      >
+        <span class="navbar-toggler-icon"></span>
+      </button>
+
+      <div class="collapse navbar-collapse" id="navbarSupportedContent"></div>
+    </nav>
+
+    <main role="main" class="container-fluid">
+      <form>
+        <div class="form-group row">
+          <label class="col-sm-2 col-form-label">Status</label>
+          <div class="col-sm-8">
+            <input
+              id="bluetooth"
+              class="form-control mr-sm-2"
+              readonly
+              value=""
+            />
+          </div>
+          <div class="col-sm-2">
+            <button id="connectButton" class="btn btn-primary" type="button">
+              Connect
+            </button>
+          </div>
+        </div>
+
+        <div class="form-group row">
+          <label class="col-sm-2 col-form-label">Brightness</label>
+          <div class="col-sm-8">
+            <input
+              id="brightnessRange"
+              class="form-control"
+              type="range"
+              step="1"
+              min="0"
+              max="255"
+              value="0"
+            />
+          </div>
+          <div class="col-sm-2">
+            <input
+              id="brightnessInput"
+              class="form-control"
+              type="number"
+              step="1"
+              min="0"
+              max="255"
+              value="0"
+            />
+          </div>
+        </div>
+
+        <div class="form-group row">
+          <label class="col-sm-2 col-form-label">Pattern</label>
+          <div class="col-sm-8">
+            <input
+              id="patternRange"
+              class="form-control"
+              type="range"
+              step="1"
+              min="0"
+              max="255"
+              value="0"
+            />
+          </div>
+          <div class="col-sm-2">
+            <input
+              id="patternInput"
+              class="form-control"
+              type="number"
+              step="1"
+              min="0"
+              max="255"
+              value="0"
+            />
+          </div>
+        </div>
+
+        <div class="form-group row">
+          <label class="col-sm-2 col-form-label">Solid Color</label>
+          <div class="col-sm-10">
+            <div id="color-picker-container"></div>
+          </div>
+        </div>
+
+        <div class="form-group row">
+          <label class="col-sm-2 col-form-label"></label>
+          <div class="col-sm-10">
+            <input type="color" id="solidColorInput" value="#000000" />
+          </div>
+        </div>
+      </form>
+    </main>
+
+    <script
+      src="https://code.jquery.com/jquery-3.2.1.slim.min.js"
+      integrity="sha384-KJ3o2DKtIkvYIK3UENzmM7KCkRr/rE9/Qpg6aAZGJwFDMVNA/GpGFF93hXpG5KkN"
+      crossorigin="anonymous"
+    ></script>
+    <script
+      src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js"
+      integrity="sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q"
+      crossorigin="anonymous"
+    ></script>
+    <script
+      src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js"
+      integrity="sha384-JZR6Spejh4U02d8jOt6vLEHfe/JQGiRRSQQxSfFWpi1MquVdAyjUar5+76PVCmYl"
+      crossorigin="anonymous"
+    ></script>
+    <script src="https://cdn.jsdelivr.net/npm/@jaames/iro/dist/iro.min.js"></script>
+  </body>
+
+  <script type="text/javascript">
+    /*
+      Demo showing simple dashboard of Arduino BLE sense
+
+      Based on: https://developers.google.com/web/updates/2015/07/interact-with-ble-devices-on-the-web
+      For earlier versions of Windows and Linux, you still have to go to chrome://flags/#enable-experimental-web-platform-features,
+      enable the highlighted flag, and restart Chrome for now.
+    */
+
+    var connected = false;
+
+    var maxRecords = 64;
+
+    var characteristics = {
+      brightness: {
+        uuid: "eb817a17-301d-49cd-8048-b4840ec6d40c",
+        properties: ["BLENotify", "BLEWrite"],
+        structure: ["Uint8"],
+        data: { V: [] },
+        writeBusy: false, // we need to track this to avoid 'GATT operation in progress' errors
+        writeValue: null,
+        dataUpdated: self => {
+          brightnessRange.value = self.data.V[0];
+          brightnessInput.value = self.data.V[0];
+        }
+      },
+      pattern: {
+        uuid: "027db9ce-6d4a-48bb-876e-d4044aea8539",
+        properties: ["BLENotify", "BLEWrite"],
+        structure: ["Uint8"],
+        data: { V: [] },
+        writeBusy: false, // we need to track this to avoid 'GATT operation in progress' errors
+        writeValue: null,
+        dataUpdated: self => {
+          patternRange.value = self.data.V[0];
+          patternInput.value = self.data.V[0];
+        }
+      },
+      patternCount: {
+        uuid: "5c888a91-2033-45cb-8932-92f7a6538869",
+        properties: ["BLENotify"],
+        structure: ["Uint8"],
+        data: { V: [] },
+        writeBusy: false, // we need to track this to avoid 'GATT operation in progress' errors
+        writeValue: null,
+        dataUpdated: self => {
+          patternRange.max = self.data.V[0] - 1;
+          patternInput.max = self.data.V[0] - 1;
+        }
+      },
+      solidColor: {
+        uuid: "5d35f786-8104-4646-b6cd-ef92ea953069",
+        properties: ["BLENotify", "BLEWrite"],
+        structure: ["Uint8", "Uint8", "Uint8"],
+        data: { R: [], G: [], B: [] },
+        writeBusy: false, // we need to track this to avoid 'GATT operation in progress' errors
+        writeValue: null,
+        dataUpdated: self =>
+          (self.colorPicker.color.rgbString = `rgb(${self.data.R[0]}, ${self.data.G[0]}, ${self.data.B[0]})`)
+      }
+    };
+
+    const characteristicKeys = Object.keys(characteristics);
+    const SERVICE_UUID = "8bc01404-b072-413b-881e-6ca27b3f630d";
+    var bytesReceived = 0;
+    var bytesPrevious = 0;
+
+    let color = { rgb: { r: 0, g: 0, b: 0 } };
+
+    // UI elements
+    const connectButton = document.getElementById("connectButton");
+    const bleStatus = document.getElementById("bluetooth");
+
+    const brightnessRange = document.getElementById("brightnessRange");
+    const brightnessInput = document.getElementById("brightnessInput");
+    brightnessRange.oninput = () => {
+      brightnessInput.value = brightnessRange.value;
+      updateBrightness(brightnessRange.value);
+    };
+    brightnessInput.oninput = () => {
+      brightnessRange.value = brightnessInput.value;
+      updateBrightness(brightnessRange.value);
+    };
+
+    const patternRange = document.getElementById("patternRange");
+    const patternInput = document.getElementById("patternInput");
+    patternRange.oninput = () => {
+      patternInput.value = patternRange.value;
+      updatePattern(patternRange.value);
+    };
+    patternInput.oninput = () => {
+      patternRange.value = patternInput.value;
+      updatePattern(patternRange.value);
+    };
+
+    const solidColorInput = document.getElementById("solidColorInput");
+    solidColorInput.oninput = () => {
+      const colorPicker = characteristics.solidColor.colorPicker;
+
+      colorPicker.color.hexString = solidColorInput.value;
+    };
+
+    initColorPicker();
+
+    if ("bluetooth" in navigator) {
+      connectButton.addEventListener("click", function(event) {
+        event.preventDefault();
+        connect();
+      });
+      // else the browser doesn't support bluetooth
+    } else {
+      msg("Browser doesn't support bluetooth");
+      connectButton.className = "btn btn-danger";
+      alert(
+        "Error: This browser doesn't support Web Bluetooth. Try using Chrome."
+      );
+    }
+
+    function msg(m) {
+      bleStatus.value = m;
+    }
+
+    async function connect() {
+      connectButton.className = "btn btn-secondary";
+      connectButton.disabled = true;
+      msg("Requesting device...");
+
+      try {
+        const device = await navigator.bluetooth.requestDevice({
+          filters: [
+            {
+              services: [SERVICE_UUID] // SERVICE_UUID
+            }
+          ]
+        });
+
+        msg("Connecting to device ...");
+        device.addEventListener("gattserverdisconnected", onDisconnected);
+        const server = await device.gatt.connect();
+
+        msg("Getting primary service ...");
+        const service = await server.getPrimaryService(SERVICE_UUID);
+
+        // Set up the characteristics
+        for (const key of characteristicKeys) {
+          console.log(key);
+          msg("Getting characteristic " + key + "...");
+          characteristics[key].characteristic = await service.getCharacteristic(
+            characteristics[key].uuid
+          );
+          console.log(characteristics[key]);
+
+          // Set up notification
+          if (characteristics[key].properties.includes("BLENotify")) {
+            characteristics[key].characteristic.addEventListener(
+              "characteristicvaluechanged",
+              function(event) {
+                handleIncoming(characteristics[key], event.target.value, key);
+              }
+            );
+            await characteristics[key].characteristic.startNotifications();
+          }
+
+          // get the current value
+          characteristics[key].characteristic.readValue().then(function(data) {
+            console.log(`${key}: ${data}`);
+          });
+
+          // Set up polling for read
+          if (characteristics[key].properties.includes("BLERead")) {
+            console.log(characteristics[key]);
+
+            characteristics[key].polling = setInterval(function() {
+              characteristics[key].characteristic
+                .readValue()
+                .then(function(data) {
+                  handleIncoming(characteristics[key], data, key);
+                });
+            }, 500);
+          }
+
+          characteristics[key].rendered = false;
+        }
+        connectButton.className = "btn btn-success";
+        msg(`Connected to BLE device "${device.name}"`);
+        connected = true;
+        connectButton.disabled = false;
+      } catch (error) {
+        console.log(error);
+        msg("Cancelled");
+        connectButton.className = "btn btn-primary";
+        connectButton.disabled = false;
+      }
+    }
+
+    function handleIncoming(characteristic, dataReceived, key) {
+      console.log(key);
+      console.log(characteristic);
+      console.log(dataReceived);
+
+      const columns = Object.keys(characteristic.data); // column headings for this characteristic
+      const typeMap = {
+        Uint8: { fn: DataView.prototype.getUint8, bytes: 1 },
+        Uint16: { fn: DataView.prototype.getUint16, bytes: 2 },
+        Float32: { fn: DataView.prototype.getFloat32, bytes: 4 }
+      };
+      var packetPointer = 0,
+        i = 0;
+
+      // Read each characteristic value in the BLE packet and push into the data array
+      characteristic.structure.forEach(function(dataType) {
+        // Lookup function to extract data for given characteristic property type
+        var dataViewFn = typeMap[dataType].fn.bind(dataReceived);
+        // Read characteristic ouput value - true => Little Endian
+        var unpackedValue = dataViewFn(packetPointer, true);
+        // Push characteristic reading onto data array
+        characteristic.data[columns[i]].push(unpackedValue);
+        // Keep array at buffer size
+        if (characteristic.data[columns[i]].length > maxRecords) {
+          characteristic.data[columns[i]].shift();
+        }
+        // move pointer forward in data packet to next value
+        packetPointer += typeMap[dataType].bytes;
+        bytesReceived += typeMap[dataType].bytes;
+        i++;
+      });
+      characteristic.rendered = false; // flag - vizualization needs to be updated
+
+      console.log(characteristic);
+
+      if (characteristic.dataUpdated)
+        characteristic.dataUpdated(characteristic);
+    }
+
+    function onDisconnected(event) {
+      connected = false;
+      let device = event.target;
+      connectButton.className = "btn btn-danger";
+      // clear read polling
+      for (const key of characteristicKeys) {
+        if (typeof characteristics[key].polling !== "undefined") {
+          clearInterval(characteristics[key].polling);
+        }
+      }
+
+      msg("Device " + device.name + " is disconnected.");
+    }
+
+    function BLEwriteTo(key) {
+      if (!connected) return;
+      if (characteristics[key].writeBusy) return; // dropping writes when one is in progress instead of queuing as LED is non-critical / realtime
+      characteristics[key].writeBusy = true; // Ensure no write happens when GATT operation in progress
+      characteristics[key].characteristic
+        .writeValue(characteristics[key].writeValue)
+        .then(_ => {
+          characteristics[key].writeBusy = false;
+        })
+        .catch(error => {
+          console.log(error);
+        });
+    }
+
+    function initColorPicker() {
+      characteristics.solidColor.colorPicker = new iro.ColorPicker(
+        "#color-picker-container",
+        {
+          width: 150,
+          color: `rgb(${color.rgb.r}, ${color.rgb.g}, ${color.rgb.b})`
+          // borderWidth: 1,
+          // borderColor: "#fff",
+          // sliderHeight: 6,
+          // sliderMargin: 6
+        }
+      );
+
+      solidColorInput.value = color.rgb;
+
+      // RGB Color Picker
+      characteristics.solidColor.colorPicker.on("color:change", updateColor);
+      function updateColor(color) {
+        if (connected) {
+          var rgb_values = Uint8Array.of(color.rgb.r, color.rgb.g, color.rgb.b);
+          console.log(rgb_values);
+          characteristics.solidColor.writeValue = rgb_values;
+          BLEwriteTo("solidColor");
+        }
+        solidColorInput.value = color.hexString;
+      }
+    }
+
+    function updateBrightness(value) {
+      if (connected) {
+        console.log(value);
+        characteristics.brightness.writeValue = Uint8Array.of(value);
+        BLEwriteTo("brightness");
+      }
+    }
+
+    function updatePattern(value) {
+      if (connected) {
+        console.log(value);
+        characteristics.pattern.writeValue = Uint8Array.of(value);
+        BLEwriteTo("pattern");
+      }
+    }
+  </script>
+</html>
