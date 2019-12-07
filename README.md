@@ -9,22 +9,22 @@ Control addressable LEDs with an ESP32 via a web browser over BLE.
 ### Currently Working:
 
 - [x] DemoReel100 patterns
-- [x] [Sam's multi-core support](https://github.com/samguyer/FastLED/blob/master/examples/DemoReelESP32/DemoReelESP32.ino)
-- [x] Setting storage in EEPROM
+- [x] FastLED ESP32 multi-core parallel output support
+- [ ] Setting storage in EEPROM
 
 ### Currently Lacking:
 
 - [x] Ability to adjust these settings via BLE:
   - [ ] power on/off
-  - [ ] brightness
-  - [ ] pattern
+  - [x] brightness
+  - [x] pattern
   - [ ] autoplay on/off
   - [ ] autoplay duration
   - [ ] speed
   - [ ] palette
   - [ ] auto palette cycling
   - [ ] palette duration
-  - [ ] solid color
+  - [x] solid color
   - [ ] twinkle speed/density
   - [ ] fire cooling/sparking
 
@@ -70,5 +70,5 @@ Recommended by [Adafruit NeoPixel "Best Practices"](https://learn.adafruit.com/a
 
 #### Libraries
 
-- [samguyer/FastLED](https://github.com/samguyer/FastLED)
+- [FastLED](https://github.com/FastLED/FastLED)
 - [ESP32 Arduino Libraries & Tools](https://github.com/espressif/arduino-esp32)
