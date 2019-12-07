@@ -36,16 +36,16 @@
 
 #define ARRAY_SIZE(A) (sizeof(A) / sizeof((A)[0]))
 
-#define DATA_PIN    13
-//#define CLK_PIN   12
+//#define DATA_PIN    13
+//#define CLK_PIN     12
 #define LED_TYPE    WS2811
 #define COLOR_ORDER RGB
-#define NUM_STRIPS 1
+#define NUM_STRIPS 16
 #define NUM_LEDS_PER_STRIP 50
 #define NUM_LEDS NUM_LEDS_PER_STRIP * NUM_STRIPS
 CRGB leds[NUM_LEDS];
 
-#define MILLI_AMPS         4000 // IMPORTANT: set the max milli-Amps of your power supply (4A = 4000mA)
+#define MILLI_AMPS         1000 // IMPORTANT: set the max milli-Amps of your power supply (4A = 4000mA)
 #define FRAMES_PER_SECOND  120
 
 // -- The core to run FastLED.show()
@@ -110,8 +110,25 @@ void FastLEDshowTask(void *pvParameters)
 void setup() {
   Serial.begin(115200);
 
-  FastLED.addLeds<LED_TYPE, DATA_PIN, COLOR_ORDER>(leds, 0, NUM_LEDS_PER_STRIP);
-  // FastLED.addLeds<LED_TYPE, 12, COLOR_ORDER>(leds, NUM_LEDS_PER_STRIP, NUM_LEDS_PER_STRIP).setCorrection(TypicalLEDStrip);
+  //  FastLED.addLeds<LED_TYPE, DATA_PIN, COLOR_ORDER>(leds, 0, NUM_LEDS_PER_STRIP);
+
+  // 23, 22,  3, 21, 19, 18,  5,  4,  0,  2, 15, 25, 26, 14, 12, 13
+  FastLED.addLeds<LED_TYPE, 23, COLOR_ORDER>(leds,  0 * NUM_LEDS_PER_STRIP, NUM_LEDS_PER_STRIP);
+  FastLED.addLeds<LED_TYPE, 22, COLOR_ORDER>(leds,  1 * NUM_LEDS_PER_STRIP, NUM_LEDS_PER_STRIP);
+  FastLED.addLeds<LED_TYPE,  3, COLOR_ORDER>(leds,  2 * NUM_LEDS_PER_STRIP, NUM_LEDS_PER_STRIP);
+  FastLED.addLeds<LED_TYPE, 21, COLOR_ORDER>(leds,  3 * NUM_LEDS_PER_STRIP, NUM_LEDS_PER_STRIP);
+  FastLED.addLeds<LED_TYPE, 19, COLOR_ORDER>(leds,  4 * NUM_LEDS_PER_STRIP, NUM_LEDS_PER_STRIP);
+  FastLED.addLeds<LED_TYPE, 18, COLOR_ORDER>(leds,  5 * NUM_LEDS_PER_STRIP, NUM_LEDS_PER_STRIP);
+  FastLED.addLeds<LED_TYPE,  5, COLOR_ORDER>(leds,  6 * NUM_LEDS_PER_STRIP, NUM_LEDS_PER_STRIP);
+  FastLED.addLeds<LED_TYPE,  4, COLOR_ORDER>(leds,  7 * NUM_LEDS_PER_STRIP, NUM_LEDS_PER_STRIP);
+  FastLED.addLeds<LED_TYPE,  0, COLOR_ORDER>(leds,  8 * NUM_LEDS_PER_STRIP, NUM_LEDS_PER_STRIP);
+  FastLED.addLeds<LED_TYPE,  2, COLOR_ORDER>(leds,  9 * NUM_LEDS_PER_STRIP, NUM_LEDS_PER_STRIP);
+  FastLED.addLeds<LED_TYPE, 15, COLOR_ORDER>(leds, 10 * NUM_LEDS_PER_STRIP, NUM_LEDS_PER_STRIP);
+  FastLED.addLeds<LED_TYPE, 25, COLOR_ORDER>(leds, 11 * NUM_LEDS_PER_STRIP, NUM_LEDS_PER_STRIP);
+  FastLED.addLeds<LED_TYPE, 26, COLOR_ORDER>(leds, 12 * NUM_LEDS_PER_STRIP, NUM_LEDS_PER_STRIP);
+  FastLED.addLeds<LED_TYPE, 14, COLOR_ORDER>(leds, 13 * NUM_LEDS_PER_STRIP, NUM_LEDS_PER_STRIP);
+  FastLED.addLeds<LED_TYPE, 12, COLOR_ORDER>(leds, 14 * NUM_LEDS_PER_STRIP, NUM_LEDS_PER_STRIP);
+  FastLED.addLeds<LED_TYPE, 13, COLOR_ORDER>(leds, 15 * NUM_LEDS_PER_STRIP, NUM_LEDS_PER_STRIP);
 
   //  FastLED.setCorrection(Typical8mmPixel);
   FastLED.setCorrection(TypicalSMD5050);
