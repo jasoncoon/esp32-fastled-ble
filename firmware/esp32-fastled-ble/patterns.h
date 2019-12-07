@@ -1,12 +1,16 @@
 /*
    ESP32 FastLED BLE: https://github.com/jasoncoon/esp32-fastled-ble
-   Copyright (C) 2018 Jason Coon
+   Copyright (C) 2017 Jason Coon
 
    Built upon the amazing FastLED work of Daniel Garcia and Mark Kriegsman:
    https://github.com/FastLED/FastLED
 
    ESP32 support provided by the hard work of Sam Guyer:
    https://github.com/samguyer/FastLED
+
+   Arduino BLE support based on Neil Kolban example for IDF: https://github.com/nkolban/esp32-snippets/blob/master/cpp_utils/tests/BLE%20Tests/SampleNotify.cpp
+   Ported to Arduino ESP32 by Evandro Copercini
+   updated by chegewara
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -23,7 +27,7 @@
 */
 
 #include "palettes.h";
-#include "twinkleFOX.h"
+#include "twinkleFox.h"
 
 void rainbow()
 {
@@ -282,4 +286,4 @@ PatternAndNameList patterns = {
   { showSolidColor,         "Solid Color" },
 };
 
-const uint8_t patternCount = ARRAY_SIZE(patterns);
+uint8_t patternCount = ARRAY_SIZE(patterns);

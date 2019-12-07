@@ -1,6 +1,6 @@
 /*
-   ESP32 FastLED BLE: https://github.com/jasoncoon/esp32-fastled-ble
-   Copyright (C) 2018 Jason Coon
+   ESP32 FastLED WebServer: https://github.com/jasoncoon/esp32-fastled-webserver
+   Copyright (C) 2017 Jason Coon
 
    Built upon the amazing FastLED work of Daniel Garcia and Mark Kriegsman:
    https://github.com/FastLED/FastLED
@@ -221,4 +221,4 @@ const String paletteNames[paletteCount] = {
 };
 
 CRGBPalette16 currentPalette( CRGB::Black);
-CRGBPalette16 targetPalette( gGradientPalettes[0] );
+CRGBPalette16 targetPalette( palettes[0] );
