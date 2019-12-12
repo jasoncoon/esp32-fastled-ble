@@ -10,16 +10,11 @@
 
     <title>ESP32 FastLED BLE</title>
 
-    <link
-      href="https://fonts.googleapis.com/css?family=Roboto&display=swap"
-      rel="stylesheet"
-    />
-
     <!-- Bootstrap CSS -->
     <link
       rel="stylesheet"
-      href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css"
-      integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm"
+      href="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/css/bootstrap.min.css"
+      integrity="sha384-MCw98/SFnGE8fJT3GXwEOngsV7Zt27NXFoaoApmYm81iuXoPkFOJwJ8ERdknLPMO"
       crossorigin="anonymous"
     />
     <style>
@@ -63,6 +58,20 @@
             <button id="connectButton" class="btn btn-primary" type="button">
               Connect
             </button>
+          </div>
+        </div>
+
+        <div class="form-group row">
+          <label class="col-sm-2 col-form-label">Brightness</label>
+          <div class="col-sm-8">
+            <div class="btn-group" role="group" aria-label="Power">
+              <button id="offButton" type="button" class="btn btn-primary">
+                Off
+              </button>
+              <button id="onButton" type="button" class="btn btn-secondary">
+                On
+              </button>
+            </div>
           </div>
         </div>
 
@@ -119,6 +128,32 @@
         </div>
 
         <div class="form-group row">
+          <label class="col-sm-2 col-form-label">Palette</label>
+          <div class="col-sm-8">
+            <input
+              id="paletteRange"
+              class="form-control"
+              type="range"
+              step="1"
+              min="0"
+              max="255"
+              value="0"
+            />
+          </div>
+          <div class="col-sm-2">
+            <input
+              id="paletteInput"
+              class="form-control"
+              type="number"
+              step="1"
+              min="0"
+              max="255"
+              value="0"
+            />
+          </div>
+        </div>
+
+        <div class="form-group row">
           <label class="col-sm-2 col-form-label">Solid Color</label>
           <div class="col-sm-10">
             <div id="color-picker-container"></div>
@@ -135,40 +170,54 @@
     </main>
 
     <script
-      src="https://code.jquery.com/jquery-3.2.1.slim.min.js"
-      integrity="sha384-KJ3o2DKtIkvYIK3UENzmM7KCkRr/rE9/Qpg6aAZGJwFDMVNA/GpGFF93hXpG5KkN"
+      src="https://code.jquery.com/jquery-3.3.1.slim.min.js"
+      integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo"
       crossorigin="anonymous"
     ></script>
     <script
-      src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js"
-      integrity="sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q"
+      src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.3/umd/popper.min.js"
+      integrity="sha384-ZMP7rVo3mIykV+2+9J3UJ46jBk0WLaUAdn689aCwoqbBJiSnjAK/l8WvCWPIPm49"
       crossorigin="anonymous"
     ></script>
     <script
-      src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js"
-      integrity="sha384-JZR6Spejh4U02d8jOt6vLEHfe/JQGiRRSQQxSfFWpi1MquVdAyjUar5+76PVCmYl"
+      src="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/js/bootstrap.min.js"
+      integrity="sha384-ChfqqxuZUCnJSK3+MXmPNIyE6ZbWh2IMqE241rYiqJxyMiZ6OW/JmZQ5stwEULTy"
       crossorigin="anonymous"
     ></script>
+
     <script src="https://cdn.jsdelivr.net/npm/@jaames/iro/dist/iro.min.js"></script>
   </body>
 
   <script type="text/javascript">
-    /*
-      Demo showing simple dashboard of Arduino BLE sense
-
-      Based on: https://developers.google.com/web/updates/2015/07/interact-with-ble-devices-on-the-web
-      For earlier versions of Windows and Linux, you still have to go to chrome://flags/#enable-experimental-web-platform-features,
-      enable the highlighted flag, and restart Chrome for now.
-    */
+    const sleep = milliseconds => {
+      return new Promise(resolve => setTimeout(resolve, milliseconds));
+    };
 
     var connected = false;
 
     var maxRecords = 64;
 
-    var characteristics = {
+    var settings = {
+      power: {
+        uuid: "c7df1272-99f7-4059-8a35-ca03831f2897",
+        properties: ["BLENotify", "BLERead", "BLEWrite"],
+        structure: ["Uint8"],
+        data: { V: [] },
+        writeBusy: false, // we need to track this to avoid 'GATT operation in progress' errors
+        writeValue: null,
+        dataUpdated: self => {
+          if (self.data.V[0]) {
+            onButton.className = "btn btn-primary";
+            offButton.className = "btn btn-secondary";
+          } else {
+            offButton.className = "btn btn-primary";
+            onButton.className = "btn btn-secondary";
+          }
+        }
+      },
       brightness: {
         uuid: "eb817a17-301d-49cd-8048-b4840ec6d40c",
-        properties: ["BLENotify", "BLEWrite"],
+        properties: ["BLENotify", "BLERead", "BLEWrite"],
         structure: ["Uint8"],
         data: { V: [] },
         writeBusy: false, // we need to track this to avoid 'GATT operation in progress' errors
@@ -180,7 +229,7 @@
       },
       pattern: {
         uuid: "027db9ce-6d4a-48bb-876e-d4044aea8539",
-        properties: ["BLENotify", "BLEWrite"],
+        properties: ["BLENotify", "BLERead", "BLEWrite"],
         structure: ["Uint8"],
         data: { V: [] },
         writeBusy: false, // we need to track this to avoid 'GATT operation in progress' errors
@@ -192,7 +241,7 @@
       },
       patternCount: {
         uuid: "5c888a91-2033-45cb-8932-92f7a6538869",
-        properties: ["BLENotify"],
+        properties: ["BLERead"],
         structure: ["Uint8"],
         data: { V: [] },
         writeBusy: false, // we need to track this to avoid 'GATT operation in progress' errors
@@ -202,24 +251,77 @@
           patternInput.max = self.data.V[0] - 1;
         }
       },
+      palette: {
+        uuid: "a2f47ab8-a385-456e-bd29-60f29a6fffed",
+        properties: ["BLENotify", "BLERead", "BLEWrite"],
+        structure: ["Uint8"],
+        data: { V: [] },
+        writeBusy: false, // we need to track this to avoid 'GATT operation in progress' errors
+        writeValue: null,
+        dataUpdated: self => {
+          paletteRange.value = self.data.V[0];
+          paletteInput.value = self.data.V[0];
+        }
+      },
+      paletteCount: {
+        uuid: "692cc883-c9d1-458d-bf8d-c3c760dd7808",
+        properties: ["BLERead"],
+        structure: ["Uint8"],
+        data: { V: [] },
+        dataUpdated: self => {
+          paletteRange.max = self.data.V[0] - 1;
+          paletteInput.max = self.data.V[0] - 1;
+        }
+      },
       solidColor: {
         uuid: "5d35f786-8104-4646-b6cd-ef92ea953069",
-        properties: ["BLENotify", "BLEWrite"],
+        properties: ["BLENotify", "BLERead", "BLEWrite"],
         structure: ["Uint8", "Uint8", "Uint8"],
         data: { R: [], G: [], B: [] },
         writeBusy: false, // we need to track this to avoid 'GATT operation in progress' errors
         writeValue: null,
-        dataUpdated: self =>
-          (self.colorPicker.color.rgbString = `rgb(${self.data.R[0]}, ${self.data.G[0]}, ${self.data.B[0]})`)
+        dataUpdated: self => {
+          if (
+            self.data.R &&
+            self.data.R.length &&
+            self.data.G &&
+            self.data.G.length &&
+            self.data.B &&
+            self.data.B.length
+          ) {
+            self.colorPicker.color.rgbString = `rgb(${self.data.R[0]}, ${self.data.G[0]}, ${self.data.B[0]})`;
+          }
+        }
       }
     };
 
-    const characteristicKeys = Object.keys(characteristics);
+    const settingKeys = Object.keys(settings);
     const SERVICE_UUID = "8bc01404-b072-413b-881e-6ca27b3f630d";
     var bytesReceived = 0;
     var bytesPrevious = 0;
 
-    let color = { rgb: { r: 0, g: 0, b: 0 } };
+    function findSetting(uuid) {
+      for (const key of settingKeys) {
+        var setting = settings[key];
+        if (setting.uuid === uuid) return setting;
+      }
+    }
+
+    function getSettingKey(uuid) {
+      for (const key of settingKeys) {
+        var setting = settings[key];
+        if (setting.uuid === uuid) return key;
+      }
+    }
+
+    let color = {
+      rgb: {
+        r: 0,
+        g: 0,
+        b: 0
+      },
+      hexString: "#000000"
+    };
 
     // UI elements
     const connectButton = document.getElementById("connectButton");
@@ -236,6 +338,19 @@
       updateBrightness(brightnessRange.value);
     };
 
+    const offButton = document.getElementById("offButton");
+    const onButton = document.getElementById("onButton");
+    offButton.onclick = () => {
+      offButton.className = "btn btn-primary";
+      onButton.className = "btn btn-secondary";
+      updatePower(false);
+    };
+    onButton.onclick = () => {
+      onButton.className = "btn btn-primary";
+      offButton.className = "btn btn-secondary";
+      updatePower(true);
+    };
+
     const patternRange = document.getElementById("patternRange");
     const patternInput = document.getElementById("patternInput");
     patternRange.oninput = () => {
@@ -247,9 +362,20 @@
       updatePattern(patternRange.value);
     };
 
+    const paletteRange = document.getElementById("paletteRange");
+    const paletteInput = document.getElementById("paletteInput");
+    paletteRange.oninput = () => {
+      paletteInput.value = paletteRange.value;
+      updatePalette(paletteRange.value);
+    };
+    paletteInput.oninput = () => {
+      paletteRange.value = paletteInput.value;
+      updatePalette(paletteRange.value);
+    };
+
     const solidColorInput = document.getElementById("solidColorInput");
     solidColorInput.oninput = () => {
-      const colorPicker = characteristics.solidColor.colorPicker;
+      const colorPicker = settings.solidColor.colorPicker;
 
       colorPicker.color.hexString = solidColorInput.value;
     };
@@ -295,64 +421,63 @@
         msg("Getting primary service ...");
         const service = await server.getPrimaryService(SERVICE_UUID);
 
-        // Set up the characteristics
-        for (const key of characteristicKeys) {
-          console.log(key);
-          msg("Getting characteristic " + key + "...");
-          characteristics[key].characteristic = await service.getCharacteristic(
-            characteristics[key].uuid
-          );
-          console.log(characteristics[key]);
+        // Set up the settings
+        for (const key of settingKeys) {
+          try {
+            // console.log(key);
+            const setting = settings[key];
 
-          // Set up notification
-          if (characteristics[key].properties.includes("BLENotify")) {
-            characteristics[key].characteristic.addEventListener(
-              "characteristicvaluechanged",
-              function(event) {
-                handleIncoming(characteristics[key], event.target.value, key);
-              }
+            msg("Getting characteristic " + key + "...");
+            setting.characteristic = await service.getCharacteristic(
+              setting.uuid
             );
-            await characteristics[key].characteristic.startNotifications();
+            // console.log(setting.characteristic);
+
+            // await sleep(1000);
+
+            // Set up notification
+            if (setting.properties.includes("BLENotify")) {
+              setting.characteristic.addEventListener(
+                "characteristicvaluechanged",
+                event => {
+                  handleIncoming(setting, event.target.value);
+                }
+              );
+              await setting.characteristic.startNotifications();
+            }
+
+            if (setting.properties.includes("BLERead")) {
+              // get the current value
+              setting.characteristic.readValue().then(data => {
+                handleIncoming(setting, data);
+              });
+            }
+
+            setting.rendered = false;
+          } catch (error) {
+            console.log(`error loading characteristic ${key}`);
+            console.error(error);
           }
-
-          // get the current value
-          characteristics[key].characteristic.readValue().then(function(data) {
-            console.log(`${key}: ${data}`);
-          });
-
-          // Set up polling for read
-          if (characteristics[key].properties.includes("BLERead")) {
-            console.log(characteristics[key]);
-
-            characteristics[key].polling = setInterval(function() {
-              characteristics[key].characteristic
-                .readValue()
-                .then(function(data) {
-                  handleIncoming(characteristics[key], data, key);
-                });
-            }, 500);
-          }
-
-          characteristics[key].rendered = false;
         }
         connectButton.className = "btn btn-success";
         msg(`Connected to BLE device "${device.name}"`);
         connected = true;
         connectButton.disabled = false;
       } catch (error) {
-        console.log(error);
+        console.error(error);
         msg("Cancelled");
         connectButton.className = "btn btn-primary";
         connectButton.disabled = false;
       }
     }
 
-    function handleIncoming(characteristic, dataReceived, key) {
-      console.log(key);
-      console.log(characteristic);
-      console.log(dataReceived);
+    function handleIncoming(setting, dataReceived) {
+      const key = getSettingKey(setting.uuid);
 
-      const columns = Object.keys(characteristic.data); // column headings for this characteristic
+      // console.log(key);
+      // console.log(setting);
+
+      const columns = Object.keys(setting.data); // column headings for this setting
       const typeMap = {
         Uint8: { fn: DataView.prototype.getUint8, bytes: 1 },
         Uint16: { fn: DataView.prototype.getUint16, bytes: 2 },
@@ -361,29 +486,32 @@
       var packetPointer = 0,
         i = 0;
 
-      // Read each characteristic value in the BLE packet and push into the data array
-      characteristic.structure.forEach(function(dataType) {
-        // Lookup function to extract data for given characteristic property type
-        var dataViewFn = typeMap[dataType].fn.bind(dataReceived);
-        // Read characteristic ouput value - true => Little Endian
-        var unpackedValue = dataViewFn(packetPointer, true);
-        // Push characteristic reading onto data array
-        characteristic.data[columns[i]].push(unpackedValue);
-        // Keep array at buffer size
-        if (characteristic.data[columns[i]].length > maxRecords) {
-          characteristic.data[columns[i]].shift();
+      // Read each setting value in the BLE packet and push into the data array
+      setting.structure.forEach(function(dataType) {
+        try {
+          // Lookup function to extract data for given characteristic property type
+          var dataViewFn = typeMap[dataType].fn.bind(dataReceived);
+          // Read characteristic ouput value - true => Little Endian
+          var unpackedValue = dataViewFn(packetPointer, true);
+          // Push characteristic reading onto data array
+          setting.data[columns[i]].push(unpackedValue);
+          // Keep array at buffer size
+          if (setting.data[columns[i]].length > maxRecords) {
+            setting.data[columns[i]].shift();
+          }
+          // move pointer forward in data packet to next value
+          packetPointer += typeMap[dataType].bytes;
+          bytesReceived += typeMap[dataType].bytes;
+        } catch (error) {
+          console.error(error);
         }
-        // move pointer forward in data packet to next value
-        packetPointer += typeMap[dataType].bytes;
-        bytesReceived += typeMap[dataType].bytes;
         i++;
       });
-      characteristic.rendered = false; // flag - vizualization needs to be updated
+      setting.rendered = false; // flag - vizualization needs to be updated
 
-      console.log(characteristic);
+      // console.log(characteristic);
 
-      if (characteristic.dataUpdated)
-        characteristic.dataUpdated(characteristic);
+      if (setting.dataUpdated) setting.dataUpdated(setting);
     }
 
     function onDisconnected(event) {
@@ -391,9 +519,10 @@
       let device = event.target;
       connectButton.className = "btn btn-danger";
       // clear read polling
-      for (const key of characteristicKeys) {
-        if (typeof characteristics[key].polling !== "undefined") {
-          clearInterval(characteristics[key].polling);
+      for (const key of settingKeys) {
+        const setting = settings[key];
+        if (typeof setting.polling !== "undefined") {
+          clearInterval(setting.polling);
         }
       }
 
@@ -402,12 +531,13 @@
 
     function BLEwriteTo(key) {
       if (!connected) return;
-      if (characteristics[key].writeBusy) return; // dropping writes when one is in progress instead of queuing as LED is non-critical / realtime
-      characteristics[key].writeBusy = true; // Ensure no write happens when GATT operation in progress
-      characteristics[key].characteristic
-        .writeValue(characteristics[key].writeValue)
+      const setting = settings[key];
+      if (setting.writeBusy) return; // dropping writes when one is in progress instead of queuing as LED is non-critical / realtime
+      setting.writeBusy = true; // Ensure no write happens when GATT operation in progress
+      setting.characteristic
+        .writeValue(setting.writeValue)
         .then(_ => {
-          characteristics[key].writeBusy = false;
+          setting.writeBusy = false;
         })
         .catch(error => {
           console.log(error);
@@ -415,7 +545,7 @@
     }
 
     function initColorPicker() {
-      characteristics.solidColor.colorPicker = new iro.ColorPicker(
+      settings.solidColor.colorPicker = new iro.ColorPicker(
         "#color-picker-container",
         {
           width: 150,
@@ -427,34 +557,51 @@
         }
       );
 
-      solidColorInput.value = color.rgb;
+      solidColorInput.value = color.hexString;
 
       // RGB Color Picker
-      characteristics.solidColor.colorPicker.on("color:change", updateColor);
+      settings.solidColor.colorPicker.on("color:change", updateColor);
       function updateColor(color) {
         if (connected) {
           var rgb_values = Uint8Array.of(color.rgb.r, color.rgb.g, color.rgb.b);
-          console.log(rgb_values);
-          characteristics.solidColor.writeValue = rgb_values;
+          // console.log(rgb_values);
+          settings.solidColor.writeValue = rgb_values;
           BLEwriteTo("solidColor");
         }
         solidColorInput.value = color.hexString;
       }
     }
 
+    function updatePower(state) {
+      if (connected) {
+        const value = state ? 1 : 0;
+        // console.log(value);
+        settings.power.writeValue = Uint8Array.of(value);
+        BLEwriteTo("power");
+      }
+    }
+
     function updateBrightness(value) {
       if (connected) {
-        console.log(value);
-        characteristics.brightness.writeValue = Uint8Array.of(value);
+        // console.log(value);
+        settings.brightness.writeValue = Uint8Array.of(value);
         BLEwriteTo("brightness");
       }
     }
 
     function updatePattern(value) {
       if (connected) {
-        console.log(value);
-        characteristics.pattern.writeValue = Uint8Array.of(value);
+        // console.log(value);
+        settings.pattern.writeValue = Uint8Array.of(value);
         BLEwriteTo("pattern");
+      }
+    }
+
+    function updatePalette(value) {
+      if (connected) {
+        // console.log(value);
+        settings.palette.writeValue = Uint8Array.of(value);
+        BLEwriteTo("palette");
       }
     }
   </script>

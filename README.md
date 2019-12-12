@@ -2,7 +2,7 @@
 
 Web BLE control app: https://jasoncoon.github.io/esp32-fastled-ble/
 
-** Currently only supported in Chrome on MacOS, Windows, and Linux
+\*\* Currently only supported in Chrome on MacOS, Windows, and Linux
 
 **Work in progress BLE port of https://github.com/jasoncoon/esp32-fastled-webserver**
 
@@ -10,22 +10,19 @@ Control addressable LEDs with an ESP32 via a web browser over BLE.
 
 ## Features
 
-### Currently Working:
+### Current Status:
 
 - [x] DemoReel100 patterns
 - [x] FastLED ESP32 multi-core parallel output support
 - [ ] Setting storage in EEPROM
-
-### Currently Lacking:
-
 - [x] Ability to adjust these settings via BLE:
-  - [ ] power on/off
+  - [x] power on/off
   - [x] brightness
   - [x] pattern
   - [ ] autoplay on/off
   - [ ] autoplay duration
   - [ ] speed
-  - [ ] palette
+  - [x] palette
   - [ ] auto palette cycling
   - [ ] palette duration
   - [x] solid color

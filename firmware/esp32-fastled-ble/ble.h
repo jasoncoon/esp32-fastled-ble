@@ -5,10 +5,13 @@
 
 BLEServer* pServer = NULL;
 
+BLECharacteristic* pPowerCharacteristic = NULL;
 BLECharacteristic* pBrightnessCharacteristic = NULL;
 BLECharacteristic* pColorCharacteristic = NULL;
 BLECharacteristic* pPatternCharacteristic = NULL;
 BLECharacteristic* pPatternCountCharacteristic = NULL;
+BLECharacteristic* pPaletteCharacteristic = NULL;
+BLECharacteristic* pPaletteCountCharacteristic = NULL;
 
 bool deviceConnected = false;
 bool oldDeviceConnected = false;
@@ -24,6 +27,38 @@ class ServerCallbacks: public BLEServerCallbacks {
 
     void onDisconnect(BLEServer* pServer) {
       deviceConnected = false;
+    }
+};
+
+class PowerCharacteristicCallbacks: public BLECharacteristicCallbacks {
+    void onWrite(BLECharacteristic *characteristic) {
+      std::string value = characteristic->getValue();
+
+      if (value.length() > 0) {
+        Serial.print("New power: ");
+
+        if (value.length() == 1) {
+          power = value[0];
+          if (power > 1) power = 1;
+          Serial.println(power);
+        }
+      }
+    }
+};
+
+class BrightnessCharacteristicCallbacks: public BLECharacteristicCallbacks {
+    void onWrite(BLECharacteristic *characteristic) {
+      std::string value = characteristic->getValue();
+
+      if (value.length() > 0) {
+        Serial.print("New brightness: ");
+
+        if (value.length() == 1) {
+          brightness = value[0];
+          Serial.println(brightness);
+          FastLED.setBrightness(brightness);
+        }
+      }
     }
 };
 
@@ -52,22 +87,6 @@ class ColorCharacteristicCallbacks: public BLECharacteristicCallbacks {
     }
 };
 
-class BrightnessCharacteristicCallbacks: public BLECharacteristicCallbacks {
-    void onWrite(BLECharacteristic *characteristic) {
-      std::string value = characteristic->getValue();
-
-      if (value.length() > 0) {
-        Serial.print("New brightness: ");
-
-        if (value.length() == 1) {
-          brightness = value[0];
-          Serial.println(brightness);
-          FastLED.setBrightness(brightness);
-        }
-      }
-    }
-};
-
 class PatternCharacteristicCallbacks: public BLECharacteristicCallbacks {
     void onWrite(BLECharacteristic *characteristic) {
       std::string value = characteristic->getValue();
@@ -84,17 +103,18 @@ class PatternCharacteristicCallbacks: public BLECharacteristicCallbacks {
     }
 };
 
-
-class PatternCountCharacteristicCallbacks: public BLECharacteristicCallbacks {
+class PaletteCharacteristicCallbacks: public BLECharacteristicCallbacks {
     void onWrite(BLECharacteristic *characteristic) {
       std::string value = characteristic->getValue();
 
       if (value.length() > 0) {
-        Serial.print("New pattern count: ");
+        Serial.print("New palette: ");
 
-        for (int i = 0; i < value.length(); i++) {
-          Serial.print((uint8_t)value[i]);
-          if (i < value.length() - 1) Serial.print(",");
+        if (value.length() == 1) {
+          currentPaletteIndex = value[0];
+          if (currentPaletteIndex >= paletteCount) currentPaletteIndex = paletteCount - 1;
+          targetPalette = palettes[currentPaletteIndex];
+          Serial.println(currentPaletteIndex);
         }
       }
     }
@@ -109,41 +129,49 @@ void setupBLE() {
   pServer->setCallbacks(new ServerCallbacks());
 
   // Create the BLE Service
-  BLEService *pService = pServer->createService("8bc01404-b072-413b-881e-6ca27b3f630d");
+  BLEService *pService = pServer->createService(BLEUUID("8bc01404-b072-413b-881e-6ca27b3f630d"), 30);
 
   // Create BLE Characteristics
 
-  // Color
-  pColorCharacteristic = pService->createCharacteristic(
-                           "5d35f786-8104-4646-b6cd-ef92ea953069",
-                           BLECharacteristic::PROPERTY_READ   |
-                           BLECharacteristic::PROPERTY_WRITE  |
-                           BLECharacteristic::PROPERTY_NOTIFY |
-                           BLECharacteristic::PROPERTY_INDICATE
-                         );
-  pColorCharacteristic->setCallbacks(new ColorCharacteristicCallbacks());
-  pColorCharacteristic->setValue(solidColor.raw, 3);
-  pColorCharacteristic->addDescriptor(new BLE2902());
+  // Power
+  pPowerCharacteristic = pService->createCharacteristic(
+                                "c7df1272-99f7-4059-8a35-ca03831f2897",
+                                BLECharacteristic::PROPERTY_READ   |
+                                BLECharacteristic::PROPERTY_WRITE  |
+                                BLECharacteristic::PROPERTY_NOTIFY
+                              );
+  pPowerCharacteristic->setCallbacks(new PowerCharacteristicCallbacks());
+  pPowerCharacteristic->setValue(&power, 1);
+  pPowerCharacteristic->addDescriptor(new BLE2902());
 
   // Brightness
   pBrightnessCharacteristic = pService->createCharacteristic(
                                 "eb817a17-301d-49cd-8048-b4840ec6d40c",
                                 BLECharacteristic::PROPERTY_READ   |
                                 BLECharacteristic::PROPERTY_WRITE  |
-                                BLECharacteristic::PROPERTY_NOTIFY |
-                                BLECharacteristic::PROPERTY_INDICATE
+                                BLECharacteristic::PROPERTY_NOTIFY
                               );
   pBrightnessCharacteristic->setCallbacks(new BrightnessCharacteristicCallbacks());
   pBrightnessCharacteristic->setValue(&brightness, 1);
   pBrightnessCharacteristic->addDescriptor(new BLE2902());
+
+  // Color
+  pColorCharacteristic = pService->createCharacteristic(
+                           "5d35f786-8104-4646-b6cd-ef92ea953069",
+                           BLECharacteristic::PROPERTY_READ   |
+                           BLECharacteristic::PROPERTY_WRITE  |
+                           BLECharacteristic::PROPERTY_NOTIFY
+                         );
+  pColorCharacteristic->setCallbacks(new ColorCharacteristicCallbacks());
+  pColorCharacteristic->setValue(solidColor.raw, 3);
+  pColorCharacteristic->addDescriptor(new BLE2902());
 
   // Pattern
   pPatternCharacteristic = pService->createCharacteristic(
                              "027db9ce-6d4a-48bb-876e-d4044aea8539",
                              BLECharacteristic::PROPERTY_READ   |
                              BLECharacteristic::PROPERTY_WRITE  |
-                             BLECharacteristic::PROPERTY_NOTIFY |
-                             BLECharacteristic::PROPERTY_INDICATE
+                             BLECharacteristic::PROPERTY_NOTIFY
                            );
   pPatternCharacteristic->setCallbacks(new PatternCharacteristicCallbacks());
   pPatternCharacteristic->setValue(&currentPatternIndex, 1);
@@ -152,14 +180,29 @@ void setupBLE() {
   // Pattern Count
   pPatternCountCharacteristic = pService->createCharacteristic(
                              "5c888a91-2033-45cb-8932-92f7a6538869",
-                             BLECharacteristic::PROPERTY_READ   |
-                             BLECharacteristic::PROPERTY_WRITE  |
-                             BLECharacteristic::PROPERTY_NOTIFY |
-                             BLECharacteristic::PROPERTY_INDICATE
+                             BLECharacteristic::PROPERTY_READ
                            );
-  pPatternCountCharacteristic->setCallbacks(new PatternCountCharacteristicCallbacks());
   pPatternCountCharacteristic->setValue(&patternCount, 1);
   pPatternCountCharacteristic->addDescriptor(new BLE2902());
+
+  // Palette
+  pPaletteCharacteristic = pService->createCharacteristic(
+                             "a2f47ab8-a385-456e-bd29-60f29a6fffed",
+                             BLECharacteristic::PROPERTY_READ   |
+                             BLECharacteristic::PROPERTY_WRITE  |
+                             BLECharacteristic::PROPERTY_NOTIFY
+                           );
+  pPaletteCharacteristic->setCallbacks(new PaletteCharacteristicCallbacks());
+  pPaletteCharacteristic->setValue(&currentPaletteIndex, 1);
+  pPaletteCharacteristic->addDescriptor(new BLE2902());
+
+  // Palette Count
+  pPaletteCountCharacteristic = pService->createCharacteristic(
+                             "692cc883-c9d1-458d-bf8d-c3c760dd7808",
+                             BLECharacteristic::PROPERTY_READ
+                           );
+  pPaletteCountCharacteristic->setValue(&paletteCount, 1);
+  pPaletteCountCharacteristic->addDescriptor(new BLE2902());
 
   // Start the service
   pService->start();

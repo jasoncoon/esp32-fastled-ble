@@ -38,21 +38,22 @@
 
 //#define DATA_PIN    13
 //#define CLK_PIN     12
-#define LED_TYPE    WS2811
+#define LED_TYPE WS2811
 #define COLOR_ORDER RGB
 #define NUM_STRIPS 16
 #define NUM_LEDS_PER_STRIP 50
-#define NUM_LEDS NUM_LEDS_PER_STRIP * NUM_STRIPS
+#define NUM_LEDS NUM_LEDS_PER_STRIP *NUM_STRIPS
 CRGB leds[NUM_LEDS];
 
-#define MILLI_AMPS         1000 // IMPORTANT: set the max milli-Amps of your power supply (4A = 4000mA)
-#define FRAMES_PER_SECOND  120
+#define MILLI_AMPS 1000 // IMPORTANT: set the max milli-Amps of your power supply (4A = 4000mA)
+#define FRAMES_PER_SECOND 120
 
 // -- The core to run FastLED.show()
 #define FASTLED_SHOW_CORE 1
 
-CRGB solidColor = CRGB::Green;
+uint8_t power = 1;
 uint8_t brightness = 16;
+CRGB solidColor = CRGB::Green;
 
 uint8_t currentPatternIndex = 0;
 uint8_t currentPaletteIndex = 0;
@@ -74,7 +75,8 @@ static TaskHandle_t userTaskHandle = 0;
 */
 void FastLEDshowESP32()
 {
-  if (userTaskHandle == 0) {
+  if (userTaskHandle == 0)
+  {
     // -- Store the handle of the current task, so that the show task can
     //    notify it when it's done
     userTaskHandle = xTaskGetCurrentTaskHandle();
@@ -83,7 +85,7 @@ void FastLEDshowESP32()
     xTaskNotifyGive(FastLEDshowTaskHandle);
 
     // -- Wait to be notified that it's done
-    const TickType_t xMaxBlockTime = pdMS_TO_TICKS( 200 );
+    const TickType_t xMaxBlockTime = pdMS_TO_TICKS(200);
     ulTaskNotifyTake(pdTRUE, xMaxBlockTime);
     userTaskHandle = 0;
   }
@@ -95,7 +97,8 @@ void FastLEDshowESP32()
 void FastLEDshowTask(void *pvParameters)
 {
   // -- Run forever...
-  for (;;) {
+  for (;;)
+  {
     // -- Wait for the trigger
     ulTaskNotifyTake(pdTRUE, portMAX_DELAY);
 
@@ -107,22 +110,23 @@ void FastLEDshowTask(void *pvParameters)
   }
 }
 
-void setup() {
+void setup()
+{
   Serial.begin(115200);
 
   //  FastLED.addLeds<LED_TYPE, DATA_PIN, COLOR_ORDER>(leds, 0, NUM_LEDS_PER_STRIP);
 
   // 23, 22,  3, 21, 19, 18,  5,  4,  0,  2, 15, 25, 26, 14, 12, 13
-  FastLED.addLeds<LED_TYPE, 23, COLOR_ORDER>(leds,  0 * NUM_LEDS_PER_STRIP, NUM_LEDS_PER_STRIP);
-  FastLED.addLeds<LED_TYPE, 22, COLOR_ORDER>(leds,  1 * NUM_LEDS_PER_STRIP, NUM_LEDS_PER_STRIP);
-  FastLED.addLeds<LED_TYPE,  3, COLOR_ORDER>(leds,  2 * NUM_LEDS_PER_STRIP, NUM_LEDS_PER_STRIP);
-  FastLED.addLeds<LED_TYPE, 21, COLOR_ORDER>(leds,  3 * NUM_LEDS_PER_STRIP, NUM_LEDS_PER_STRIP);
-  FastLED.addLeds<LED_TYPE, 19, COLOR_ORDER>(leds,  4 * NUM_LEDS_PER_STRIP, NUM_LEDS_PER_STRIP);
-  FastLED.addLeds<LED_TYPE, 18, COLOR_ORDER>(leds,  5 * NUM_LEDS_PER_STRIP, NUM_LEDS_PER_STRIP);
-  FastLED.addLeds<LED_TYPE,  5, COLOR_ORDER>(leds,  6 * NUM_LEDS_PER_STRIP, NUM_LEDS_PER_STRIP);
-  FastLED.addLeds<LED_TYPE,  4, COLOR_ORDER>(leds,  7 * NUM_LEDS_PER_STRIP, NUM_LEDS_PER_STRIP);
-  FastLED.addLeds<LED_TYPE,  0, COLOR_ORDER>(leds,  8 * NUM_LEDS_PER_STRIP, NUM_LEDS_PER_STRIP);
-  FastLED.addLeds<LED_TYPE,  2, COLOR_ORDER>(leds,  9 * NUM_LEDS_PER_STRIP, NUM_LEDS_PER_STRIP);
+  FastLED.addLeds<LED_TYPE, 23, COLOR_ORDER>(leds, 0 * NUM_LEDS_PER_STRIP, NUM_LEDS_PER_STRIP);
+  FastLED.addLeds<LED_TYPE, 22, COLOR_ORDER>(leds, 1 * NUM_LEDS_PER_STRIP, NUM_LEDS_PER_STRIP);
+  FastLED.addLeds<LED_TYPE, 3, COLOR_ORDER>(leds, 2 * NUM_LEDS_PER_STRIP, NUM_LEDS_PER_STRIP);
+  FastLED.addLeds<LED_TYPE, 21, COLOR_ORDER>(leds, 3 * NUM_LEDS_PER_STRIP, NUM_LEDS_PER_STRIP);
+  FastLED.addLeds<LED_TYPE, 19, COLOR_ORDER>(leds, 4 * NUM_LEDS_PER_STRIP, NUM_LEDS_PER_STRIP);
+  FastLED.addLeds<LED_TYPE, 18, COLOR_ORDER>(leds, 5 * NUM_LEDS_PER_STRIP, NUM_LEDS_PER_STRIP);
+  FastLED.addLeds<LED_TYPE, 5, COLOR_ORDER>(leds, 6 * NUM_LEDS_PER_STRIP, NUM_LEDS_PER_STRIP);
+  FastLED.addLeds<LED_TYPE, 4, COLOR_ORDER>(leds, 7 * NUM_LEDS_PER_STRIP, NUM_LEDS_PER_STRIP);
+  FastLED.addLeds<LED_TYPE, 0, COLOR_ORDER>(leds, 8 * NUM_LEDS_PER_STRIP, NUM_LEDS_PER_STRIP);
+  FastLED.addLeds<LED_TYPE, 2, COLOR_ORDER>(leds, 9 * NUM_LEDS_PER_STRIP, NUM_LEDS_PER_STRIP);
   FastLED.addLeds<LED_TYPE, 15, COLOR_ORDER>(leds, 10 * NUM_LEDS_PER_STRIP, NUM_LEDS_PER_STRIP);
   FastLED.addLeds<LED_TYPE, 25, COLOR_ORDER>(leds, 11 * NUM_LEDS_PER_STRIP, NUM_LEDS_PER_STRIP);
   FastLED.addLeds<LED_TYPE, 26, COLOR_ORDER>(leds, 12 * NUM_LEDS_PER_STRIP, NUM_LEDS_PER_STRIP);
@@ -145,7 +149,8 @@ void setup() {
   setupBLE();
 }
 
-void loop() {
+void loop()
+{
   //  // notify changed value
   //  if (deviceConnected && colorChanged) {
   //    pCharacteristic->setValue((uint8_t*)&value, 4);
@@ -155,27 +160,37 @@ void loop() {
   //  }
 
   // disconnecting
-  if (!deviceConnected && oldDeviceConnected) {
-    delay(500); // give the bluetooth stack the chance to get things ready
+  if (!deviceConnected && oldDeviceConnected)
+  {
+    delay(500);                  // give the bluetooth stack the chance to get things ready
     pServer->startAdvertising(); // restart advertising
     Serial.println("start advertising");
     oldDeviceConnected = deviceConnected;
   }
 
   // connecting
-  if (deviceConnected && !oldDeviceConnected) {
+  if (deviceConnected && !oldDeviceConnected)
+  {
     // do stuff here on connecting
     oldDeviceConnected = deviceConnected;
     Serial.println("connecting");
   }
 
-  // Call the current pattern function once, updating the 'leds' array
-  patterns[currentPatternIndex].pattern();
+  if (power == 0)
+  {
+    fill_solid(leds, NUM_LEDS, CRGB::Black);
+  }
+  else
+  {
+    // Call the current pattern function once, updating the 'leds' array
+    patterns[currentPatternIndex].pattern();
 
-  EVERY_N_MILLISECONDS(40) {
-    // slowly blend the current palette to the next
-    nblendPaletteTowardPalette(currentPalette, targetPalette, 8);
-    gHue++;  // slowly cycle the "base color" through the rainbow
+    EVERY_N_MILLISECONDS(40)
+    {
+      // slowly blend the current palette to the next
+      nblendPaletteTowardPalette(currentPalette, targetPalette, 8);
+      gHue++; // slowly cycle the "base color" through the rainbow
+    }
   }
 
   // send the 'leds' array out to the actual LED strip
