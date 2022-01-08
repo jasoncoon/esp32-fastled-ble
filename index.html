@@ -13,8 +13,8 @@
     <!-- Bootstrap CSS -->
     <link
       rel="stylesheet"
-      href="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/css/bootstrap.min.css"
-      integrity="sha384-MCw98/SFnGE8fJT3GXwEOngsV7Zt27NXFoaoApmYm81iuXoPkFOJwJ8ERdknLPMO"
+      href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.1/dist/css/bootstrap.min.css"
+      integrity="sha384-zCbKRCUGaJDkqS1kPbPd7TveP5iyJE0EjAuZQTgFLD2ylzuqKfdKlfG/eSrtxUkn"
       crossorigin="anonymous"
     />
     <style>
@@ -170,18 +170,14 @@
     </main>
 
     <script
-      src="https://code.jquery.com/jquery-3.3.1.slim.min.js"
-      integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo"
+      src="https://cdn.jsdelivr.net/npm/jquery@3.5.1/dist/jquery.slim.min.js"
+      integrity="sha384-DfXdz2htPH0lsSSs5nCTpuj/zy4C+OGpamoFVy38MVBnE+IbbVYUew+OrCXaRkfj"
       crossorigin="anonymous"
     ></script>
+
     <script
-      src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.3/umd/popper.min.js"
-      integrity="sha384-ZMP7rVo3mIykV+2+9J3UJ46jBk0WLaUAdn689aCwoqbBJiSnjAK/l8WvCWPIPm49"
-      crossorigin="anonymous"
-    ></script>
-    <script
-      src="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/js/bootstrap.min.js"
-      integrity="sha384-ChfqqxuZUCnJSK3+MXmPNIyE6ZbWh2IMqE241rYiqJxyMiZ6OW/JmZQ5stwEULTy"
+      src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.1/dist/js/bootstrap.bundle.min.js"
+      integrity="sha384-fQybjgWLrvvRgtW6bFlB7jaZrFsaBXjsOMm/tB9LTS58ONXgqbR9W8oWht/amnpF"
       crossorigin="anonymous"
     ></script>
 
@@ -189,8 +185,8 @@
   </body>
 
   <script type="text/javascript">
-    const sleep = milliseconds => {
-      return new Promise(resolve => setTimeout(resolve, milliseconds));
+    const sleep = (milliseconds) => {
+      return new Promise((resolve) => setTimeout(resolve, milliseconds));
     };
 
     var connected = false;
@@ -205,7 +201,7 @@
         data: { V: [] },
         writeBusy: false, // we need to track this to avoid 'GATT operation in progress' errors
         writeValue: null,
-        dataUpdated: self => {
+        dataUpdated: (self) => {
           if (self.data.V[0]) {
             onButton.className = "btn btn-primary";
             offButton.className = "btn btn-secondary";
@@ -213,7 +209,7 @@
             offButton.className = "btn btn-primary";
             onButton.className = "btn btn-secondary";
           }
-        }
+        },
       },
       brightness: {
         uuid: "eb817a17-301d-49cd-8048-b4840ec6d40c",
@@ -222,10 +218,10 @@
         data: { V: [] },
         writeBusy: false, // we need to track this to avoid 'GATT operation in progress' errors
         writeValue: null,
-        dataUpdated: self => {
+        dataUpdated: (self) => {
           brightnessRange.value = self.data.V[0];
           brightnessInput.value = self.data.V[0];
-        }
+        },
       },
       pattern: {
         uuid: "027db9ce-6d4a-48bb-876e-d4044aea8539",
@@ -234,10 +230,10 @@
         data: { V: [] },
         writeBusy: false, // we need to track this to avoid 'GATT operation in progress' errors
         writeValue: null,
-        dataUpdated: self => {
+        dataUpdated: (self) => {
           patternRange.value = self.data.V[0];
           patternInput.value = self.data.V[0];
-        }
+        },
       },
       patternCount: {
         uuid: "5c888a91-2033-45cb-8932-92f7a6538869",
@@ -246,10 +242,10 @@
         data: { V: [] },
         writeBusy: false, // we need to track this to avoid 'GATT operation in progress' errors
         writeValue: null,
-        dataUpdated: self => {
+        dataUpdated: (self) => {
           patternRange.max = self.data.V[0] - 1;
           patternInput.max = self.data.V[0] - 1;
-        }
+        },
       },
       palette: {
         uuid: "a2f47ab8-a385-456e-bd29-60f29a6fffed",
@@ -258,20 +254,20 @@
         data: { V: [] },
         writeBusy: false, // we need to track this to avoid 'GATT operation in progress' errors
         writeValue: null,
-        dataUpdated: self => {
+        dataUpdated: (self) => {
           paletteRange.value = self.data.V[0];
           paletteInput.value = self.data.V[0];
-        }
+        },
       },
       paletteCount: {
         uuid: "692cc883-c9d1-458d-bf8d-c3c760dd7808",
         properties: ["BLERead"],
         structure: ["Uint8"],
         data: { V: [] },
-        dataUpdated: self => {
+        dataUpdated: (self) => {
           paletteRange.max = self.data.V[0] - 1;
           paletteInput.max = self.data.V[0] - 1;
-        }
+        },
       },
       solidColor: {
         uuid: "5d35f786-8104-4646-b6cd-ef92ea953069",
@@ -280,7 +276,7 @@
         data: { R: [], G: [], B: [] },
         writeBusy: false, // we need to track this to avoid 'GATT operation in progress' errors
         writeValue: null,
-        dataUpdated: self => {
+        dataUpdated: (self) => {
           if (
             self.data.R &&
             self.data.R.length &&
@@ -291,8 +287,8 @@
           ) {
             self.colorPicker.color.rgbString = `rgb(${self.data.R[0]}, ${self.data.G[0]}, ${self.data.B[0]})`;
           }
-        }
-      }
+        },
+      },
     };
 
     const settingKeys = Object.keys(settings);
@@ -318,9 +314,9 @@
       rgb: {
         r: 0,
         g: 0,
-        b: 0
+        b: 0,
       },
-      hexString: "#000000"
+      hexString: "#000000",
     };
 
     // UI elements
@@ -383,7 +379,7 @@
     initColorPicker();
 
     if ("bluetooth" in navigator) {
-      connectButton.addEventListener("click", function(event) {
+      connectButton.addEventListener("click", function (event) {
         event.preventDefault();
         connect();
       });
@@ -409,9 +405,9 @@
         const device = await navigator.bluetooth.requestDevice({
           filters: [
             {
-              services: [SERVICE_UUID] // SERVICE_UUID
-            }
-          ]
+              services: [SERVICE_UUID], // SERVICE_UUID
+            },
+          ],
         });
 
         msg("Connecting to device ...");
@@ -439,7 +435,7 @@
             if (setting.properties.includes("BLENotify")) {
               setting.characteristic.addEventListener(
                 "characteristicvaluechanged",
-                event => {
+                (event) => {
                   handleIncoming(setting, event.target.value);
                 }
               );
@@ -448,7 +444,7 @@
 
             if (setting.properties.includes("BLERead")) {
               // get the current value
-              setting.characteristic.readValue().then(data => {
+              setting.characteristic.readValue().then((data) => {
                 handleIncoming(setting, data);
               });
             }
@@ -481,13 +477,13 @@
       const typeMap = {
         Uint8: { fn: DataView.prototype.getUint8, bytes: 1 },
         Uint16: { fn: DataView.prototype.getUint16, bytes: 2 },
-        Float32: { fn: DataView.prototype.getFloat32, bytes: 4 }
+        Float32: { fn: DataView.prototype.getFloat32, bytes: 4 },
       };
       var packetPointer = 0,
         i = 0;
 
       // Read each setting value in the BLE packet and push into the data array
-      setting.structure.forEach(function(dataType) {
+      setting.structure.forEach(function (dataType) {
         try {
           // Lookup function to extract data for given characteristic property type
           var dataViewFn = typeMap[dataType].fn.bind(dataReceived);
@@ -536,10 +532,10 @@
       setting.writeBusy = true; // Ensure no write happens when GATT operation in progress
       setting.characteristic
         .writeValue(setting.writeValue)
-        .then(_ => {
+        .then((_) => {
           setting.writeBusy = false;
         })
-        .catch(error => {
+        .catch((error) => {
           console.log(error);
         });
     }
@@ -549,7 +545,7 @@
         "#color-picker-container",
         {
           width: 150,
-          color: `rgb(${color.rgb.r}, ${color.rgb.g}, ${color.rgb.b})`
+          color: `rgb(${color.rgb.r}, ${color.rgb.g}, ${color.rgb.b})`,
           // borderWidth: 1,
           // borderColor: "#fff",
           // sliderHeight: 6,

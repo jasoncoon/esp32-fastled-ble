@@ -1,2 +1,3 @@
-secrets.h
 .DS_Store
+/.vscode/
+/.pio/

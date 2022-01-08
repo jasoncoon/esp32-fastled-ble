@@ -36,20 +36,17 @@
 
 #define ARRAY_SIZE(A) (sizeof(A) / sizeof((A)[0]))
 
-//#define DATA_PIN    13
+#define DATA_PIN    18
 //#define CLK_PIN     12
-#define LED_TYPE WS2811
-#define COLOR_ORDER RGB
-#define NUM_STRIPS 16
-#define NUM_LEDS_PER_STRIP 50
+#define LED_TYPE SK6812
+#define COLOR_ORDER GRB
+#define NUM_STRIPS 1
+#define NUM_LEDS_PER_STRIP 64
 #define NUM_LEDS NUM_LEDS_PER_STRIP *NUM_STRIPS
 CRGB leds[NUM_LEDS];
 
-#define MILLI_AMPS 1000 // IMPORTANT: set the max milli-Amps of your power supply (4A = 4000mA)
+#define MILLI_AMPS 1600 // IMPORTANT: set the max milli-Amps of your power supply (4A = 4000mA)
 #define FRAMES_PER_SECOND 120
-
-// -- The core to run FastLED.show()
-#define FASTLED_SHOW_CORE 1
 
 uint8_t power = 1;
 uint8_t brightness = 16;
@@ -65,86 +62,38 @@ uint8_t sparking = 120;
 #include "patterns.h"
 #include "ble.h"
 
-// -- Task handles for use in the notifications
-static TaskHandle_t FastLEDshowTaskHandle = 0;
-static TaskHandle_t userTaskHandle = 0;
-
-/** show() for ESP32
-    Call this function instead of FastLED.show(). It signals core 0 to issue a show,
-    then waits for a notification that it is done.
-*/
-void FastLEDshowESP32()
-{
-  if (userTaskHandle == 0)
-  {
-    // -- Store the handle of the current task, so that the show task can
-    //    notify it when it's done
-    userTaskHandle = xTaskGetCurrentTaskHandle();
-
-    // -- Trigger the show task
-    xTaskNotifyGive(FastLEDshowTaskHandle);
-
-    // -- Wait to be notified that it's done
-    const TickType_t xMaxBlockTime = pdMS_TO_TICKS(200);
-    ulTaskNotifyTake(pdTRUE, xMaxBlockTime);
-    userTaskHandle = 0;
-  }
-}
-
-/** show Task
-    This function runs on core 0 and just waits for requests to call FastLED.show()
-*/
-void FastLEDshowTask(void *pvParameters)
-{
-  // -- Run forever...
-  for (;;)
-  {
-    // -- Wait for the trigger
-    ulTaskNotifyTake(pdTRUE, portMAX_DELAY);
-
-    // -- Do the show (synchronously)
-    FastLED.show();
-
-    // -- Notify the calling task
-    xTaskNotifyGive(userTaskHandle);
-  }
-}
-
 void setup()
 {
   Serial.begin(115200);
 
-  //  FastLED.addLeds<LED_TYPE, DATA_PIN, COLOR_ORDER>(leds, 0, NUM_LEDS_PER_STRIP);
+  FastLED.addLeds<LED_TYPE, DATA_PIN, COLOR_ORDER>(leds, 0, NUM_LEDS_PER_STRIP);
 
   // 23, 22,  3, 21, 19, 18,  5,  4,  0,  2, 15, 25, 26, 14, 12, 13
-  FastLED.addLeds<LED_TYPE, 23, COLOR_ORDER>(leds, 0 * NUM_LEDS_PER_STRIP, NUM_LEDS_PER_STRIP);
-  FastLED.addLeds<LED_TYPE, 22, COLOR_ORDER>(leds, 1 * NUM_LEDS_PER_STRIP, NUM_LEDS_PER_STRIP);
-  FastLED.addLeds<LED_TYPE, 3, COLOR_ORDER>(leds, 2 * NUM_LEDS_PER_STRIP, NUM_LEDS_PER_STRIP);
-  FastLED.addLeds<LED_TYPE, 21, COLOR_ORDER>(leds, 3 * NUM_LEDS_PER_STRIP, NUM_LEDS_PER_STRIP);
-  FastLED.addLeds<LED_TYPE, 19, COLOR_ORDER>(leds, 4 * NUM_LEDS_PER_STRIP, NUM_LEDS_PER_STRIP);
-  FastLED.addLeds<LED_TYPE, 18, COLOR_ORDER>(leds, 5 * NUM_LEDS_PER_STRIP, NUM_LEDS_PER_STRIP);
-  FastLED.addLeds<LED_TYPE, 5, COLOR_ORDER>(leds, 6 * NUM_LEDS_PER_STRIP, NUM_LEDS_PER_STRIP);
-  FastLED.addLeds<LED_TYPE, 4, COLOR_ORDER>(leds, 7 * NUM_LEDS_PER_STRIP, NUM_LEDS_PER_STRIP);
-  FastLED.addLeds<LED_TYPE, 0, COLOR_ORDER>(leds, 8 * NUM_LEDS_PER_STRIP, NUM_LEDS_PER_STRIP);
-  FastLED.addLeds<LED_TYPE, 2, COLOR_ORDER>(leds, 9 * NUM_LEDS_PER_STRIP, NUM_LEDS_PER_STRIP);
-  FastLED.addLeds<LED_TYPE, 15, COLOR_ORDER>(leds, 10 * NUM_LEDS_PER_STRIP, NUM_LEDS_PER_STRIP);
-  FastLED.addLeds<LED_TYPE, 25, COLOR_ORDER>(leds, 11 * NUM_LEDS_PER_STRIP, NUM_LEDS_PER_STRIP);
-  FastLED.addLeds<LED_TYPE, 26, COLOR_ORDER>(leds, 12 * NUM_LEDS_PER_STRIP, NUM_LEDS_PER_STRIP);
-  FastLED.addLeds<LED_TYPE, 14, COLOR_ORDER>(leds, 13 * NUM_LEDS_PER_STRIP, NUM_LEDS_PER_STRIP);
-  FastLED.addLeds<LED_TYPE, 12, COLOR_ORDER>(leds, 14 * NUM_LEDS_PER_STRIP, NUM_LEDS_PER_STRIP);
-  FastLED.addLeds<LED_TYPE, 13, COLOR_ORDER>(leds, 15 * NUM_LEDS_PER_STRIP, NUM_LEDS_PER_STRIP);
+  // FastLED.addLeds<LED_TYPE, 23, COLOR_ORDER>(leds, 0 * NUM_LEDS_PER_STRIP, NUM_LEDS_PER_STRIP);
+  // FastLED.addLeds<LED_TYPE, 22, COLOR_ORDER>(leds, 1 * NUM_LEDS_PER_STRIP, NUM_LEDS_PER_STRIP);
+  // FastLED.addLeds<LED_TYPE, 3, COLOR_ORDER>(leds, 2 * NUM_LEDS_PER_STRIP, NUM_LEDS_PER_STRIP);
+  // FastLED.addLeds<LED_TYPE, 21, COLOR_ORDER>(leds, 3 * NUM_LEDS_PER_STRIP, NUM_LEDS_PER_STRIP);
+  // FastLED.addLeds<LED_TYPE, 19, COLOR_ORDER>(leds, 4 * NUM_LEDS_PER_STRIP, NUM_LEDS_PER_STRIP);
+  // FastLED.addLeds<LED_TYPE, 18, COLOR_ORDER>(leds, 5 * NUM_LEDS_PER_STRIP, NUM_LEDS_PER_STRIP);
+  // FastLED.addLeds<LED_TYPE, 5, COLOR_ORDER>(leds, 6 * NUM_LEDS_PER_STRIP, NUM_LEDS_PER_STRIP);
+  // FastLED.addLeds<LED_TYPE, 4, COLOR_ORDER>(leds, 7 * NUM_LEDS_PER_STRIP, NUM_LEDS_PER_STRIP);
+  // FastLED.addLeds<LED_TYPE, 0, COLOR_ORDER>(leds, 8 * NUM_LEDS_PER_STRIP, NUM_LEDS_PER_STRIP);
+  // FastLED.addLeds<LED_TYPE, 2, COLOR_ORDER>(leds, 9 * NUM_LEDS_PER_STRIP, NUM_LEDS_PER_STRIP);
+  // FastLED.addLeds<LED_TYPE, 15, COLOR_ORDER>(leds, 10 * NUM_LEDS_PER_STRIP, NUM_LEDS_PER_STRIP);
+  // FastLED.addLeds<LED_TYPE, 25, COLOR_ORDER>(leds, 11 * NUM_LEDS_PER_STRIP, NUM_LEDS_PER_STRIP);
+  // FastLED.addLeds<LED_TYPE, 26, COLOR_ORDER>(leds, 12 * NUM_LEDS_PER_STRIP, NUM_LEDS_PER_STRIP);
+  // FastLED.addLeds<LED_TYPE, 14, COLOR_ORDER>(leds, 13 * NUM_LEDS_PER_STRIP, NUM_LEDS_PER_STRIP);
+  // FastLED.addLeds<LED_TYPE, 12, COLOR_ORDER>(leds, 14 * NUM_LEDS_PER_STRIP, NUM_LEDS_PER_STRIP);
+  // FastLED.addLeds<LED_TYPE, 13, COLOR_ORDER>(leds, 15 * NUM_LEDS_PER_STRIP, NUM_LEDS_PER_STRIP);
 
   //  FastLED.setCorrection(Typical8mmPixel);
-  FastLED.setCorrection(TypicalSMD5050);
+  FastLED.setCorrection(TypicalLEDStrip);
   //  FastLED.setCorrection(UncorrectedColor);
-  FastLED.setDither(0);
+  // FastLED.setDither(0);
   FastLED.setMaxPowerInVoltsAndMilliamps(5, MILLI_AMPS);
 
   // set master brightness control
   FastLED.setBrightness(brightness);
-
-  // -- Create the FastLED show task
-  xTaskCreatePinnedToCore(FastLEDshowTask, "FastLEDshowTask", 2048, NULL, 2, &FastLEDshowTaskHandle, FASTLED_SHOW_CORE);
 
   setupBLE();
 }
@@ -194,9 +143,9 @@ void loop()
   }
 
   // send the 'leds' array out to the actual LED strip
-  FastLEDshowESP32();
+  FastLED.show();
 
   // insert a delay to keep the framerate modest
-  // FastLED.delay(1000 / FRAMES_PER_SECOND);
-  delay(1000 / FRAMES_PER_SECOND);
+  FastLED.delay(1000 / FRAMES_PER_SECOND);
+  // delay(1000 / FRAMES_PER_SECOND);
 }
